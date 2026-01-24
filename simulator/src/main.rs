@@ -75,7 +75,8 @@ fn main() {
                 }
             },
             Err(e) => {
-                return send_error(format!("Failed to decode ResultMeta Base64: {}", e));
+                eprintln!("Warning: Failed to decode ResultMeta Base64: {}. Proceeding with empty storage.", e);
+                None
             }
         }
     };
