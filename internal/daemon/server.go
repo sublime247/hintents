@@ -51,7 +51,7 @@ type GetTraceRequest struct {
 
 // GetTraceResponse represents the get_trace RPC response
 type GetTraceResponse struct {
-	Hash   string                 `json:"hash"`
+	Hash   string                   `json:"hash"`
 	Traces []map[string]interface{} `json:"traces"`
 }
 
@@ -177,7 +177,7 @@ func (s *Server) Start(ctx context.Context, port string) error {
 	})
 
 	logger.Logger.Info("Starting JSON-RPC server", "port", port)
-	
+
 	srv := &http.Server{
 		Addr: ":" + port,
 	}
