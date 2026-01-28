@@ -28,14 +28,6 @@ const (
 // Client handles interactions with the Stellar Network
 type Client struct {
 	Horizon horizonclient.ClientInterface
-}
-
-// NewClient creates a new RPC client (defaults to Public Network for now)
-func NewClient() *Client {
-       return &Client{
-	       Horizon: horizonclient.DefaultPublicNetClient,
-       }
-	Horizon *horizonclient.Client
 	Network Network
 }
 

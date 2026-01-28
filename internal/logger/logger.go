@@ -12,6 +12,11 @@ var Logger *slog.Logger
 // Level is the current log level
 var Level = new(slog.LevelVar)
 
+func init() {
+	// Initialize with a default logger to prevent panics
+	Init(slog.LevelInfo, os.Stderr)
+}
+
 // Init initializes the logger with the specified level
 func Init(level slog.Level, output io.Writer) {
 	if output == nil {

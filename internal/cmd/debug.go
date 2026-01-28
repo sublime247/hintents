@@ -46,7 +46,13 @@ Example:
 			fmt.Printf("RPC URL: %s\n", rpcURLFlag)
 		}
 
-		// In a real implementation, we would proceed with client.GetTransaction(...)
+		// Fetch transaction details
+		resp, err := client.GetTransaction(cmd.Context(), txHash)
+		if err != nil {
+			return fmt.Errorf("failed to fetch transaction: %w", err)
+		}
+
+		fmt.Printf("Transaction fetched successfully. Envelope size: %d bytes\n", len(resp.EnvelopeXdr))
 		return nil
 	},
 }
@@ -54,6 +60,6 @@ Example:
 func init() {
 	debugCmd.Flags().StringVarP(&networkFlag, "network", "n", string(rpc.Mainnet), "Stellar network to use (testnet, mainnet, futurenet)")
 	debugCmd.Flags().StringVar(&rpcURLFlag, "rpc-url", "", "Custom Horizon RPC URL to use")
-	
+
 	rootCmd.AddCommand(debugCmd)
 }
