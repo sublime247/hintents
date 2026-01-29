@@ -11,6 +11,8 @@ type TransactionResponse struct {
 
 // ParseTransactionResponse converts a Horizon transaction into our response format
 func ParseTransactionResponse(tx hProtocol.Transaction) *TransactionResponse {
+// parseTransactionResponse converts a Horizon transaction into a TransactionResponse
+func parseTransactionResponse(tx hProtocol.Transaction) *TransactionResponse {
 	return &TransactionResponse{
 		EnvelopeXdr:   tx.EnvelopeXdr,
 		ResultXdr:     tx.ResultXdr,
