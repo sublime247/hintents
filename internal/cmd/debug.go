@@ -239,6 +239,30 @@ The simulation results are stored in a session that can be saved for later analy
 
 		fmt.Printf("Transaction fetched successfully. Envelope size: %d bytes\n", len(resp.EnvelopeXdr))
 
+		// Run simulation
+		simRunner, err := simulator.NewRunner()
+		if err != nil {
+			return err
+		}
+
+		simReq := &simulator.SimulationRequest{
+			EnvelopeXdr:   resp.EnvelopeXdr,
+			ResultMetaXdr: resp.ResultMetaXdr,
+			Profile:       ProfileFlag,
+		}
+
+		simResp, err := simRunner.Run(simReq)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Simulation successful!")
+		if simResp.Flamegraph != "" {
+			err := os.WriteFile("profile.svg", []byte(simResp.Flamegraph), 0644)
+			if err != nil {
+				return fmt.Errorf("failed to save flamegraph: %w", err)
+			}
+			fmt.Println("Flamegraph saved to profile.svg")
 		// 3. Extract Ledger Keys from ResultMeta
 		keys, err := extractLedgerKeys(resp.ResultMetaXdr)
 		if err != nil {
