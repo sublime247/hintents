@@ -96,16 +96,12 @@ var (
 type Client struct {
 	HorizonURL   string
 	Horizon      horizonclient.ClientInterface
-	HorizonURL   string
-	AltURLs      []string
-	currIndex    int
-	mu           sync.RWMutex
 	Network      Network
 	SorobanURL   string
 	AltURLs      []string
 	mu           sync.RWMutex
 	currIndex    int
-	token        string // stored for reference, not logged
+	token        string
 	Config       NetworkConfig
 	CacheEnabled bool
 }
@@ -170,15 +166,9 @@ func NewClientWithURLs(urls []string, net Network, token string) *Client {
 			HorizonURL: urls[0],
 			HTTP:       httpClient,
 		},
-		Network:    net,
-		SorobanURL: sorobanURL,
-		AltURLs:    urls,
-		token:      token,
-		Config:     config,
-		HorizonURL:   urls[0],
-		AltURLs:      urls,
 		Network:      net,
 		SorobanURL:   sorobanURL,
+		AltURLs:      urls,
 		token:        token,
 		Config:       config,
 		CacheEnabled: true,
@@ -226,18 +216,13 @@ func createHTTPClient(token string) *http.Client {
 
 	return &http.Client{
 		Transport: transport,
-			transport: http.DefaultTransport,
-		},
 	}
 }
 
 // NewCustomClient creates a new RPC client for a custom/private network
 func NewCustomClient(config NetworkConfig) (*Client, error) {
-	if config.HorizonURL == "" {
-		return nil, fmt.Errorf("horizon URL is required for custom network")
-	}
-	if config.NetworkPassphrase == "" {
-		return nil, fmt.Errorf("network passphrase is required for custom network")
+	if err := ValidateNetworkConfig(config); err != nil {
+		return nil, err
 	}
 
 	horizonClient := &horizonclient.Client{
@@ -556,7 +541,7 @@ func (c *Client) getLedgerEntriesAttempt(ctx context.Context, keysToFetch []stri
 		Jsonrpc: "2.0",
 		ID:      1,
 		Method:  "getLedgerEntries",
-		Params:  []interface{}{keys},
+		Params:  []interface{}{keysToFetch},
 	}
 
 	bodyBytes, err := json.Marshal(reqBody)
