@@ -22,7 +22,7 @@ struct SimulationResponse {
 
 /// Main entry point for the erst simulator.
 ///
-/// Reads a JSON `SimulationRequest` from stdin, decodes XDR data,
+/// Reads a JSON `SimulationRequest` from stdin, 
 /// initializes a Soroban host environment, and outputs a JSON
 /// `SimulationResponse` with simulation results or errors.
 ///
