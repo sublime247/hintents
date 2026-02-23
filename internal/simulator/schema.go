@@ -9,28 +9,79 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/dotandev/hintents/internal/authtrace"
 	_ "modernc.org/sqlite"
 )
 
-
 // SimulationRequest is the JSON object passed to the Rust binary via Stdin
 type SimulationRequest struct {
-	// XDR encoded TransactionEnvelope
-	EnvelopeXdr string `json:"envelope_xdr"`
-	// XDR encoded TransactionResultMeta (historical data)
-	ResultMetaXdr string `json:"result_meta_xdr"`
-	// Snapshot of Ledger Entries (Key XDR -> Entry XDR) necessary for replay
-	LedgerEntries map[string]string `json:"ledger_entries,omitempty"`
-	// XDR encoded LedgerHeader (optional, for context)
-	// LedgerHeaderXdr string `json:"ledger_header_xdr,omitempty"`
+	EnvelopeXdr     string            `json:"envelope_xdr"`
+	ResultMetaXdr   string            `json:"result_meta_xdr"`
+	LedgerEntries   map[string]string `json:"ledger_entries,omitempty"`
+	Timestamp       int64             `json:"timestamp,omitempty"`
+	LedgerSequence  uint32            `json:"ledger_sequence,omitempty"`
+	WasmPath        *string           `json:"wasm_path,omitempty"`
+	MockArgs        *[]string         `json:"mock_args,omitempty"`
+	Profile         bool              `json:"profile,omitempty"`
+	ProtocolVersion *uint32           `json:"protocol_version,omitempty"`
+
+	AuthTraceOpts *AuthTraceOptions      `json:"auth_trace_opts,omitempty"`
+	CustomAuthCfg map[string]interface{} `json:"custom_auth_config,omitempty"`
 }
 
-// SimulationResponse is the JSON object returned by the Rust binary via Stdout
+type AuthTraceOptions struct {
+	Enabled              bool `json:"enabled"`
+	TraceCustomContracts bool `json:"trace_custom_contracts"`
+	CaptureSigDetails    bool `json:"capture_sig_details"`
+	MaxEventDepth        int  `json:"max_event_depth,omitempty"`
+}
+
+// DiagnosticEvent represents a structured diagnostic event from the simulator
+type DiagnosticEvent struct {
+	EventType                string   `json:"event_type"` // "contract", "system", "diagnostic"
+	ContractID               *string  `json:"contract_id,omitempty"`
+	Topics                   []string `json:"topics"`
+	Data                     string   `json:"data"`
+	InSuccessfulContractCall bool     `json:"in_successful_contract_call"`
+}
+
+// BudgetUsage represents resource consumption during simulation
+type BudgetUsage struct {
+	CPUInstructions    uint64  `json:"cpu_instructions"`
+	MemoryBytes        uint64  `json:"memory_bytes"`
+	OperationsCount    int     `json:"operations_count"`
+	CPULimit           uint64  `json:"cpu_limit"`
+	MemoryLimit        uint64  `json:"memory_limit"`
+	CPUUsagePercent    float64 `json:"cpu_usage_percent"`
+	MemoryUsagePercent float64 `json:"memory_usage_percent"`
+}
+
 type SimulationResponse struct {
-	Status string   `json:"status"` // "success" or "error"
-	Error  string   `json:"error,omitempty"`
-	Events []string `json:"events,omitempty"` // Diagnostic events
-	Logs   []string `json:"logs,omitempty"`   // Host debug logs
+	Status            string               `json:"status"` // "success" or "error"
+	Error             string               `json:"error,omitempty"`
+	Events            []string             `json:"events,omitempty"`            // Raw event strings (backward compatibility)
+	DiagnosticEvents  []DiagnosticEvent    `json:"diagnostic_events,omitempty"` // Structured diagnostic events
+	Logs              []string             `json:"logs,omitempty"`              // Host debug logs
+	Flamegraph        string               `json:"flamegraph,omitempty"`        // SVG flamegraph
+	AuthTrace         *authtrace.AuthTrace `json:"auth_trace,omitempty"`
+	BudgetUsage       *BudgetUsage         `json:"budget_usage,omitempty"` // Resource consumption metrics
+	CategorizedEvents []CategorizedEvent   `json:"categorized_events,omitempty"`
+	ProtocolVersion   *uint32              `json:"protocol_version,omitempty"` // Protocol version used
+}
+
+type CategorizedEvent struct {
+	EventType  string   `json:"event_type"`
+	ContractID *string  `json:"contract_id,omitempty"`
+	Topics     []string `json:"topics"`
+	Data       string   `json:"data"`
+}
+
+type SecurityViolation struct {
+	Type        string                 `json:"type"`
+	Severity    string                 `json:"severity"`
+	Description string                 `json:"description"`
+	Contract    string                 `json:"contract"`
+	Details     map[string]interface{} `json:"details,omitempty"`
 }
 
 // Session represents a stored simulation result
@@ -158,4 +209,3 @@ func (db *DB) SearchSessions(filters SearchFilters) ([]Session, error) {
 
 	return sessions, nil
 }
-
