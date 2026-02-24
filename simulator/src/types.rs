@@ -16,6 +16,8 @@ pub struct SimulationRequest {
     pub timestamp: String,
 }
 
+use crate::source_mapper::SourceLocation;
+
 #[derive(Debug, Serialize)]
 pub struct SimulationResponse {
     pub status: String,
@@ -28,7 +30,9 @@ pub struct SimulationResponse {
     pub optimization_report: Option<OptimizationReport>,
     pub budget_usage: Option<BudgetUsage>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_location: Option<String>,
+    pub source_location: Option<SourceLocation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wasm_offset: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]

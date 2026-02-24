@@ -67,6 +67,15 @@ type SimulationResponse struct {
 	BudgetUsage       *BudgetUsage         `json:"budget_usage,omitempty"` // Resource consumption metrics
 	CategorizedEvents []CategorizedEvent   `json:"categorized_events,omitempty"`
 	ProtocolVersion   *uint32              `json:"protocol_version,omitempty"` // Protocol version used
+	SourceLocation    *SourceLocation      `json:"source_location,omitempty"`
+	WasmOffset        *uint64              `json:"wasm_offset,omitempty"`
+}
+
+type SourceLocation struct {
+	File      string  `json:"file"`
+	Line      uint32  `json:"line"`
+	Column    uint32  `json:"column"`
+	ColumnEnd *uint32 `json:"column_end,omitempty"`
 }
 
 type CategorizedEvent struct {
