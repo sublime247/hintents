@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -686,13 +687,25 @@ func runLocalWasmReplay() error {
 	fmt.Printf("%s Executing contract locally...\n", visualizer.Symbol("play"))
 	resp, err := runner.Run(req)
 	if err != nil {
-		fmt.Printf("%s Execution failed: %v\n", visualizer.Error(), err)
+		fmt.Printf("%s Technical failure: %v\n", visualizer.Error(), err)
 		return err
 	}
 
 	// Display results
 	fmt.Println()
-	fmt.Printf("%s Execution completed successfully\n", visualizer.Success())
+	if resp.Status == "error" {
+		fmt.Printf("%s Execution failed\n", visualizer.Error())
+		if resp.Error != "" {
+			fmt.Printf("Error: %s\n", resp.Error)
+		}
+
+		if resp.SourceLocation != nil {
+			fmt.Println()
+			displaySourceLocation(resp.SourceLocation)
+		}
+	} else {
+		fmt.Printf("%s Execution completed successfully\n", visualizer.Success())
+	}
 	fmt.Println()
 
 	if len(resp.Logs) > 0 {
@@ -967,4 +980,70 @@ func init() {
 	debugCmd.Flags().StringVar(&themeFlag, "theme", "", "Color theme (default, deuteranopia, protanopia, tritanopia, high-contrast)")
 
 	rootCmd.AddCommand(debugCmd)
+}
+func displaySourceLocation(loc *simulator.SourceLocation) {
+	fmt.Printf("%s Location: %s:%d:%d\n", visualizer.Symbol("location"), loc.File, loc.Line, loc.Column)
+
+	// Try to find the file
+	content, err := os.ReadFile(loc.File)
+	if err != nil {
+		// Try to find in current directory or src
+		if c, err := os.ReadFile(filepath.Join("src", loc.File)); err == nil {
+			content = c
+		} else {
+			return
+		}
+	}
+
+	lines := strings.Split(string(content), "\n")
+	if int(loc.Line) > len(lines) {
+		return
+	}
+
+	// Show context
+	start := int(loc.Line) - 3
+	if start < 0 {
+		start = 0
+	}
+	end := int(loc.Line) + 2
+	if end > len(lines) {
+		end = len(lines)
+	}
+
+	fmt.Println()
+	for i := start; i < end; i++ {
+		lineNum := i + 1
+		prefix := "  "
+		if lineNum == int(loc.Line) {
+			prefix = "> "
+		}
+
+		fmt.Printf("%s %4d | %s\n", prefix, lineNum, lines[i])
+
+		// Highlight the token if this is the failing line
+		if lineNum == int(loc.Line) {
+			// Calculate exact indentation to line up with the printed line
+			// prefix (2) + lineNum (4) + pipe (3) = 9 spaces
+			markerIndent := strings.Repeat(" ", 9)
+			offset := int(loc.Column) - 1
+			if offset < 0 {
+				offset = 0
+			}
+
+			highlightLen := 1
+			if loc.ColumnEnd != nil && *loc.ColumnEnd > loc.Column {
+				highlightLen = int(*loc.ColumnEnd - loc.Column)
+			}
+
+			// Don't exceed line length
+			if offset < len(lines[i]) {
+				if offset+highlightLen > len(lines[i]) {
+					highlightLen = len(lines[i]) - offset
+				}
+				marker := strings.Repeat(" ", offset) + strings.Repeat("^", highlightLen)
+				fmt.Printf("      | %s%s\n", markerIndent[:2], marker)
+			}
+		}
+	}
+	fmt.Println()
 }
